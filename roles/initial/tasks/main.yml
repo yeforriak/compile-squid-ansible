@@ -1,0 +1,9 @@
+- name: Update all packages to their latest ones
+  apt:
+    upgrade: yes
+    update_cache: yes
+  become: yes
+  retries: 5
+  delay: 5
+  register: update_result
+  until: update_result is succeeded
