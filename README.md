@@ -13,3 +13,8 @@ See squid logs:
 - `vagrant ssh squid`
 - `less /var/log/squid/access.log`
  
+IpTables:
+- `iptables -t nat -v -L -n --line-number` # see rules
+- `iptables -t nat -D PREROUTING {rule-number}` # delete rules
+- `iptables -t nat -X` # delete chain
+- `iptables -t nat -F` # flush
