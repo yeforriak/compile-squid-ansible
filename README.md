@@ -18,3 +18,6 @@ IpTables:
 - `iptables -t nat -D PREROUTING {rule-number}` # delete rules
 - `iptables -t nat -X` # delete chain
 - `iptables -t nat -F` # flush
+
+tcpdump see http request headers for port 3127
+- `tcpdump -A -s 10240 'tcp port 3127 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)' | egrep --line-buffered "^........(GET |HTTP\/|POST |HEAD )|^[A-Za-z0-9-]+: " | sed -r 's/^........(GET |HTTP\/|POST |HEAD )/\n\1/g`

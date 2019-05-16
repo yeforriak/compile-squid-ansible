@@ -57,13 +57,41 @@
   become: yes
   command: /usr/lib/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
 
-- name: IP Table redirect rule for port 80
-  command: iptables -t nat -A PREROUTING -s 10.0.0.0/8 -p tcp --dport 80 -j REDIRECT --to-port 3128
+- iptables:
+    table: nat
+    chain: PREROUTING
+    in_interface: eth0
+    protocol: tcp
+    match: tcp
+    destination_port: 80
+    source: 10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+    jump: REDIRECT
+    to_ports: 3128
+    comment: Redirect HTTP traffic to port 3128
   become: yes
 
-- name: IP Table redirect rule for port 443
-  command: iptables -t nat -A PREROUTING -s 10.0.0.0/8 -p tcp --dport 443 -j REDIRECT --to-port 3129
+- iptables:
+    table: nat
+    chain: PREROUTING
+    in_interface: eth0
+    protocol: tcp
+    match: tcp
+    destination_port: 443
+    source: 10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+    jump: REDIRECT
+    to_ports: 3129
+    comment: Redirect HTTPS traffic to port 3129
   become: yes
+
+- name: Install `netfilter-persistent` && `iptables-persistent` packages
+  package:
+    name: "{{item}}"
+    state: present
+  with_items:
+      - iptables-persistent
+      - netfilter-persistent
+  when: ansible_os_family == "Debian"
+  become: true
 
 - name: Remove tmp files
   file: path=/tmp/squid/ state=absent
