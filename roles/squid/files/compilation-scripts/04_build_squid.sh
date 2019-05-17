@@ -49,6 +49,7 @@ patch squid-${SQUID_VER}/debian/control < ../../control.patch
 patch squid-${SQUID_VER}/debian/rules < ../../rules.patch
 
 # build the package
+export DEB_DH_SHLIBDEPS_ARGS_ALL=--dpkg-shlibdeps-params=--ignore-missing-info
 cd squid-${SQUID_VER} && dpkg-buildpackage -rfakeroot -b
 
 # and revert
