@@ -4,18 +4,56 @@
     src: compilation-scripts/
     dest: /tmp/squid/
 
+- name: Copy Squid debian files
+  copy:
+    src: debian/
+    dest: /tmp/squid/debian/
+
+#- name: Extract libressl into /tmp/squid/libressl
+#  unarchive:
+#    src: libressl/
+#    dest: /tmp/squid/libressl
+
+
 - name: Changing permissions
   file: dest=/tmp/squid/{{ item }} mode=a+x
   with_items:
-  - 01_tools.sh
-  - 02_build_ecap.sh
-  - 03_install_ecap.sh
-  - 04_build_squid.sh
-  - 05_install_squid.sh
+    - 02_build_ecap.sh
+    - 03_install_ecap.sh
+    - 04_build_squid.sh
+    - 05_install_squid.sh
 
 - name: Installing tools
-  command: /tmp/squid/01_tools.sh
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - devscripts
+    - build-essential
+    - fakeroot
+    - cdbs
+    - debhelper
+    - dh-autoreconf
+    - libsasl2-dev
+    - libxml2-dev
+    - libdb-dev
+    - libkrb5-dev
+    - nettle-dev
+    - libnetfilter-conntrack-dev
+    - libpam0g-dev
+    - libldap2-dev
+    - libcppunit-dev
+    - libexpat1-dev
+    - libcap2-dev
+    - libltdl-dev
+    - libssl-dev
+    - libdbi-perl
+    - squid-langpack
   become: yes
+  retries: 30
+  delay: 5
+  register: update_result
+  until: update_result is succeeded
 
 - name: Build ecap
   command: /tmp/squid/02_build_ecap.sh
@@ -33,34 +71,20 @@
   become: yes
 
 # Configure Squid
-- name: Copy Squid config
-  become: yes
-  copy:
-    src: configuration/squid.conf
-    dest: /etc/squid/
-
-- name: Copy Squid allowed_sites
-  become: yes
-  copy:
-    src: configuration/allowed_sites.txt
-    dest: /etc/squid/
-
 - name: Create Squid certificate directory
   become: yes
   file: path=/etc/squid/ssl_cert state=directory
-
-- name: Create Squid certificate
-  become: yes
-  command: openssl req -new -newkey rsa:2048 -sha256 -days 3650 -nodes -x509 -extensions v3_ca -keyout /etc/squid/ssl_cert/squid.pem  -out /etc/squid/ssl_cert/squid.pem -subj "/C=UK/ST=London/L=London/O=10x/OU=FT5/CN=ssl.squid.10xbanking.com"
 
 - name: Initialise Squid certificate db
   become: yes
   command: /usr/lib/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
 
+- name: Remove tmp files
+  file: path=/tmp/squid/ state=absent
+
 - iptables:
     table: nat
     chain: PREROUTING
-    in_interface: eth0
     protocol: tcp
     match: tcp
     destination_port: 80
@@ -73,7 +97,6 @@
 - iptables:
     table: nat
     chain: PREROUTING
-    in_interface: eth0
     protocol: tcp
     match: tcp
     destination_port: 443
@@ -88,16 +111,8 @@
     name: "{{item}}"
     state: present
   with_items:
-      - iptables-persistent
-      - netfilter-persistent
+    - iptables-persistent
+    - netfilter-persistent
   when: ansible_os_family == "Debian"
   become: true
 
-- name: Remove tmp files
-  file: path=/tmp/squid/ state=absent
-
-- name: Start Squid
-  become: yes
-  service:
-    name: squid
-    state: started

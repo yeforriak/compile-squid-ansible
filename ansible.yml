@@ -1,5 +1,5 @@
 - hosts: ansible
   connection: local
   roles:
-    - initial
+    #- initial
     - squid
